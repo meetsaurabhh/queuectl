@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import signal
 import time
-from db import claim_job, mark_completed, schedule_retry
+from db import claim_job, mark_completed, schedule_retry, add_job_log
 from executor import run_command
 
 stop_flag = mp.Value('b', False)
@@ -14,7 +14,11 @@ def worker_loop(worker_id: int):
             time.sleep(1)
             continue
         print(f"[Worker {worker_id}] Claimed job {job['id']} -> {job['command']}")
+        start = time.time()
         code, out, err = run_command(job['command'])
+        duration = time.time() - start
+        attempt = int(job.get('attempts', 0)) + 1
+        add_job_log(job['id'], attempt, code, duration, out, err)
         if code == 0:
             mark_completed(job['id'])
             print(f"[Worker {worker_id}] Completed {job['id']}")

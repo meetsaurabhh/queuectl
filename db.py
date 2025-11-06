@@ -15,6 +15,16 @@ def _ensure_tables():
     conn=get_connection();cur=conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,command TEXT,state TEXT,attempts INTEGER,max_retries INTEGER,run_after INTEGER,created_at TEXT,updated_at TEXT,last_error TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS config(key TEXT PRIMARY KEY,value TEXT)")
+    cur.execute("""CREATE TABLE IF NOT EXISTS job_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id TEXT,
+        attempt INTEGER,
+        exit_code INTEGER,
+        duration REAL,
+        stdout TEXT,
+        stderr TEXT,
+        created_at TEXT
+    )""")
     conn.commit();conn.close()
 
 def init_db(): _ensure_tables();print("Database initialized.")
@@ -74,13 +84,20 @@ def move_to_dead(i,e=None):
 def schedule_retry(i, last_error=None):
     conn=get_connection();cur=conn.cursor()
     cur.execute("SELECT attempts,max_retries FROM jobs WHERE id=?",(i,));r=cur.fetchone()
-    if not r: conn.close();return
-    a=r['attempts']+1; m=r['max_retries']; b=float(get_config("backoff_base","2"))
-    if a>m:
-        cur.execute("UPDATE jobs SET attempts=?,state='dead',last_error=?,updated_at=? WHERE id=?",(a,last_error,now_iso(),i))
+    if not r:
+        conn.close();return
+    attempts = int(r['attempts']) + 1
+    max_retries = int(r['max_retries'])
+    try:
+        backoff_base = float(get_config("backoff_base","2"))
+    except:
+        backoff_base = 2.0
+    if attempts > max_retries:
+        cur.execute("UPDATE jobs SET attempts=?,state='dead',last_error=?,updated_at=? WHERE id=?",(attempts,last_error,now_iso(),i))
     else:
-        run_after=int(time.time())+int(b**a)
-        cur.execute("UPDATE jobs SET attempts=?,state='pending',run_after=?,last_error=?,updated_at=? WHERE id=?",(a,run_after,last_error,now_iso(),i))
+        delay = int(backoff_base ** attempts)
+        run_after = int(time.time()) + delay
+        cur.execute("UPDATE jobs SET attempts=?,state='pending',run_after=?,last_error=?,updated_at=? WHERE id=?",(attempts,run_after,last_error,now_iso(),i))
     conn.commit();conn.close()
 
 def list_dead(limit=50):
@@ -95,3 +112,32 @@ def retry_dead(job_id):
     if not r: conn.close();return False
     cur.execute("UPDATE jobs SET state='pending',attempts=0,last_error=NULL,updated_at=? WHERE id=?",(now_iso(),job_id))
     conn.commit();conn.close();return True
+
+# ---- Job logs ----
+def add_job_log(job_id, attempt, exit_code, duration, stdout, stderr):
+    conn=get_connection();cur=conn.cursor()
+    cur.execute("INSERT INTO job_logs (job_id, attempt, exit_code, duration, stdout, stderr, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (job_id, attempt, exit_code, duration, stdout, stderr, now_iso()))
+    conn.commit();conn.close()
+
+def get_job_logs(job_id, limit=50):
+    conn=get_connection();cur=conn.cursor()
+    cur.execute("SELECT * FROM job_logs WHERE job_id=? ORDER BY id DESC LIMIT ?", (job_id, limit))
+    r=cur.fetchall();conn.close();return [dict(x) for x in r]
+
+def get_metrics():
+    conn=get_connection();cur=conn.cursor()
+    cur.execute("SELECT COUNT(*) as total_runs, AVG(duration) as avg_duration, SUM(CASE WHEN exit_code!=0 THEN 1 ELSE 0 END) as failed_runs FROM job_logs")
+    r=cur.fetchone()
+    total_runs = r['total_runs'] or 0
+    avg_duration = float(r['avg_duration']) if r['avg_duration'] is not None else 0.0
+    failed_runs = r['failed_runs'] or 0
+    cur.execute("SELECT COUNT(*) as dead_count FROM jobs WHERE state='dead'")
+    dead_count = cur.fetchone()['dead_count'] or 0
+    conn.close()
+    return {
+        "total_runs": total_runs,
+        "avg_duration": avg_duration,
+        "failed_runs": failed_runs,
+        "dead_count": dead_count
+    }
