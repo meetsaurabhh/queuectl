@@ -5,7 +5,7 @@ It manages background jobs with worker processes, supports automatic retries usi
 
 ---
 
-## 🚀 Usage Examples
+## Usage Examples
 
 ### 1. Enqueue a new job
 python queuectl.py enqueue --command "echo Hello World"
