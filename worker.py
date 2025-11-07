@@ -4,6 +4,7 @@ import time
 from db import claim_job, mark_completed, schedule_retry, add_job_log
 from executor import run_command
 
+
 stop_flag = mp.Value('b', False)
 
 def worker_loop(worker_id: int):
