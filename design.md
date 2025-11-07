@@ -133,8 +133,6 @@ Stored in config table:
 | max_retries | 3 |
 | backoff_base | 2 |
 
-Can be updated manually:
-sqlite3 queue.db "UPDATE config SET value='5' WHERE key='max_retries';"
 
 ---
 
