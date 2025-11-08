@@ -158,7 +158,7 @@ python queuectl.py stats
 ## Demo Video
 
 Demo link:
-[Watch demo on Google Drive](https://drive.google.com/your-demo-link)
+[Watch demo on Google Drive]([[https://drive.google.com/file/d/1N01vMHcGAR0qbDbpaDUkqf4dSG_PElET/view?usp=sharing])
 
 ---
 
