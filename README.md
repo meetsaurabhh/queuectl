@@ -26,7 +26,7 @@ python queuectl.py stats
 
 ---
 
-## 🧩 Job Lifecycle
+## Job Lifecycle
 
 | State | Description |
 |-------|-------------|
@@ -38,7 +38,7 @@ python queuectl.py stats
 
 ---
 
-## 🧱 Architecture Overview
+## Architecture Overview
 
 ### Components
 
@@ -61,7 +61,7 @@ flowchart TD
 
 ---
 
-## ⚖️ System Features
+## System Features
 
 ✅ Persistent storage in SQLite  
 ✅ Multiple workers (parallel processing)  
@@ -74,7 +74,7 @@ flowchart TD
 
 ---
 
-## 📈 Metrics Command
+## Metrics Command
 
 You can monitor runtime statistics:
 python queuectl.py stats
@@ -88,7 +88,7 @@ Metrics:
 
 ---
 
-## 🧾 Job Logs
+## Job Logs
 
 Every job attempt logs:
 - stdout  
@@ -108,7 +108,7 @@ Sample output:
 
 ---
 
-## ⚡ Bonus Features Implemented
+## Bonus Features Implemented
 
 | Feature | Description |
 |----------|-------------|
@@ -119,7 +119,7 @@ Sample output:
 
 ---
 
-## 🧪 Testing Scenarios
+## Testing Scenarios
 
 | Test | Command | Expected Behavior |
 |------|----------|------------------|
@@ -129,18 +129,10 @@ Sample output:
 | Retry DLQ job | python queuectl.py dlq retry <job-id> | Job moves from dead → pending |
 | Metrics | python queuectl.py stats | Displays total runs and averages |
 
----
-
-## 📘 Assumptions & Trade-offs
-
-- SQLite chosen for simplicity and reliability (no external dependencies).  
-- Exponential backoff uses a configurable base (default `2`).  
-- Commands are executed via subprocess — assumes trusted inputs.  
-- No priority queues (to keep minimal and predictable).  
 
 ---
 
-## 🧰 Configuration Management
+## Configuration Management
 
 You can adjust retry settings directly in the config table:
 sqlite3 queue.db "UPDATE config SET value='5' WHERE key='max_retries';"
@@ -153,7 +145,7 @@ Default values:
 
 ---
 
-## 🧪 Quick End-to-End Test
+## Quick End-to-End Test
 
 python queuectl.py initdb
 python queuectl.py enqueue --command "echo quick-test"
@@ -163,21 +155,14 @@ python queuectl.py stats
 
 ---
 
-## 🎥 Demo Video (Optional)
+## Demo Video
 
-If you’re submitting this project as an assignment, record a short 1–2 minute CLI demo showing:
-- initdb  
-- enqueue  
-- worker start  
-- dlq list + retry  
-- stats  
-
-Then add your demo link below:
+Demo link:
 [Watch demo on Google Drive](https://drive.google.com/your-demo-link)
 
 ---
 
-## ✅ Checklist
+## Checklist
 
 - [x] All required commands functional  
 - [x] Persistent job storage  
